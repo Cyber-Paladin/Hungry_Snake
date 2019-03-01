@@ -4,10 +4,13 @@ using System.IO;
 using System.Linq;
 using System.Text;
 using System.Threading;
-using System.Threading.Tasks;
-using ConsoleApplication1;
 
-namespace Hungry_Snake
+//1: итоговый рейтинг в обновляемой таблице;
+//2: баг с генератором еды после рестарта на всех уровнях;+
+//3: фоновый таймер который отображаеться в конце игры;+
+//4: изменение уровней в режиме челенджа с ботом;
+//5: рефакторинг с разделением на классы и переносом в clr проект
+namespace SnakeSimulator
 {
     enum Mode
     {
@@ -48,8 +51,9 @@ namespace Hungry_Snake
         private static int select               = 0;
         private static int level                = 1;
         private static long score               = 0;
+        private static int[] gameTimelapse      = new int[3];
+        private static int[] pauseTimelapse     = new int[3];
 
-        //private static Task t = new Task(StreamArcadeGame);
         private static Thread backgrnd          = new Thread(StreamSurvivalGame); //поток 1
         private static Thread backgroundArcade  = new Thread(StreamArcadeGame); //поток 2
         private static Thread backgroundClone   = new Thread(StreamChallengeGame); //поток 3
@@ -60,7 +64,7 @@ namespace Hungry_Snake
         /// </summary>
         static void Main(string[] args)
         {
-            Console.Title = "[Game]Hungry snake in the console";
+            Console.Title = "Snake Simulator";
             Console.SetWindowSize(width + 1, height + 1);
             Console.SetBufferSize(width + 1, height + 1);
             Console.CursorVisible = false;
@@ -118,7 +122,7 @@ namespace Hungry_Snake
         /// <summary>
         /// Первинна промальовка змійки(method of class Snake)
         /// </summary>
-        static void InitiateSnake()
+        public static void InitiateSnake()
         {
             myDir = Direction.Left;
 
@@ -149,7 +153,7 @@ namespace Hungry_Snake
         /// <summary>
         /// Первинна промальовка змійки-суперника(method of class Snake)
         /// </summary>
-        static void InitiateSnakebot()
+        public static void InitiateSnakebot()
         {
             botDir = Direction.Right;
 
@@ -174,14 +178,14 @@ namespace Hungry_Snake
         /// <summary>
         /// Генератор їжі на випадкових координатах ігрового поля(method of class FoodFactory)
         /// </summary>
-        static void CreateFood()
+        public static void CreateFood()
         {
-            tx = randomize.Next(0, width-1);
-            ty = randomize.Next(0, height-1);
+            tx = randomize.Next(0, width - 1);
+            ty = randomize.Next(0, height - 1);
             while (gameField[ty, tx] == 'O' || gameField[ty, tx] == 'X')
             {
-                tx = randomize.Next(0, width-1);
-                ty = randomize.Next(0, height-1);
+                tx = randomize.Next(0, width - 1);
+                ty = randomize.Next(0, height - 1);
             }
             meal = new Point(tx, ty);
             gameField[ty, tx] = '@';
@@ -194,18 +198,18 @@ namespace Hungry_Snake
         /// <summary>
         /// Процесс руху змійки у ігровому полі(method of class Snake)
         /// </summary>
-        static void MoveSnake()
+        public static void MoveSnake()
         {
             if (myDir == Direction.Left)
             {
                 if (head.X == 0)
-                    head = new Point(76, head.Y);
+                    head = new Point(width - 2, head.Y);
                 else
                     head = new Point(head.X - 1, head.Y);
             }
             else if (myDir == Direction.Right)
             {
-                if (head.X == 76)
+                if (head.X == width - 2)
                     head = new Point(0, head.Y);
                 else
                     head = new Point(head.X + 1, head.Y);
@@ -213,13 +217,13 @@ namespace Hungry_Snake
             else if (myDir == Direction.Up)
             {
                 if (head.Y == 0)
-                    head = new Point(head.X, 22);
+                    head = new Point(head.X, height - 2);
                 else
                     head = new Point(head.X, head.Y - 1);
             }
             else if (myDir == Direction.Down)
             {
-                if (head.Y == 22)
+                if (head.Y == height - 2)
                     head = new Point(head.X, 0);
                 else
                     head = new Point(head.X, head.Y + 1);
@@ -240,7 +244,7 @@ namespace Hungry_Snake
         /// <summary>
         /// Процесс руху змійки-суперника(method of class Snakebot : Snake)
         /// </summary>
-        static void MoveSnakebot()
+        public static void MoveSnakebot()
         {
             if (botDir == Direction.Left)
             {
@@ -288,7 +292,7 @@ namespace Hungry_Snake
         /// <summary>
         /// Процесс зміни напрямку змійки-суперника(method of Snakebot : Snake)
         /// </summary>
-        static void DirectSnakebot()
+        public static void DirectSnakebot()
         {
             if (FOODEXIST)
             {
@@ -450,14 +454,14 @@ namespace Hungry_Snake
         /// Обчислення довжини змійки
         /// </summary>
         /// <returns>кількість сегментів змійки</returns>
-        static int SnakeLength()
+        public static int SnakeLength()
         {
             return snake.Count;
         }
         /// <summary>
         /// Генератор первинного ігрового поля(method of Walls)
         /// </summary>
-        static void DrawField()
+        public static void DrawField()
         {
             Console.SetCursorPosition(0, 0);
             Console.Write(" --------------------");
@@ -480,7 +484,7 @@ namespace Hungry_Snake
         /// <summary>
         /// Вираовує процес поїдання їжі змійкою(method of Snake)
         /// </summary>
-        static void EatFood()
+        public static void EatFood()
         {
             if (!(meal.X == snake[snake.Count - 1].X && meal.Y == snake[snake.Count - 1].Y))
                 IEAT = true;
@@ -499,7 +503,7 @@ namespace Hungry_Snake
         /// <summary>
         /// Вираховує процес поїдання їжі суперником(method of class Snakebot : Snake)
         /// </summary>
-        static void EatFoodSnakebot()
+        public static void EatFoodSnakebot()
         {
             if (!(meal.X == cloneSnake[cloneSnake.Count - 1].X && meal.Y == cloneSnake[cloneSnake.Count - 1].Y))
                 BOTEAT = true;
@@ -520,7 +524,7 @@ namespace Hungry_Snake
         /// <summary>
         /// Описує хід гри режиму виживання(method of class Engine)
         /// </summary>
-        static void ControlSurvivalGame()
+        public static void ControlSurvivalGame()
         {
             while (backgrnd.IsAlive)
             {
@@ -576,7 +580,7 @@ namespace Hungry_Snake
         /// <summary>
         /// Описує хід гри режиму аркади(method of class Engine)
         /// </summary>
-        static void ControlArcadeGame()
+        public static void ControlArcadeGame()
         {
             while (backgroundArcade.IsAlive)
             {
@@ -632,7 +636,7 @@ namespace Hungry_Snake
         /// <summary>
         /// Описує хід гри режиму протистояння( method of class Engine)
         /// </summary>
-        static void ControlChallengeGame()
+        public static void ControlChallengeGame()
         {
             while (backgroundClone.IsAlive)
             {
@@ -688,7 +692,7 @@ namespace Hungry_Snake
         /// <summary>
         /// Виконавчий метод потоку backgrnd(method of class Engine)
         /// </summary>
-        static void StreamSurvivalGame()
+        public static void StreamSurvivalGame()
         {
             while (!GAMEOVER)
             {
@@ -698,6 +702,7 @@ namespace Hungry_Snake
                     Console.ForegroundColor = ConsoleColor.Red;
                     Console.SetCursorPosition(30, 12);
                     Console.Write("GAME PAUSED");
+                    pauseTimelapse[0] = GetTimeInSecond();
 
                     keyInfo = Console.ReadKey(true);
                     while (keyInfo.Key != ConsoleKey.P)
@@ -710,6 +715,8 @@ namespace Hungry_Snake
                     Console.ForegroundColor = ConsoleColor.White;
                     Console.SetCursorPosition(30, 12);
                     Console.Write("            ");
+                    pauseTimelapse[1] = GetTimeInSecond();
+                    pauseTimelapse[2] = pauseTimelapse[1] - pauseTimelapse[0];
                 }
 
                 for (int i = 1; i < snake.Count; i++)
@@ -739,7 +746,7 @@ namespace Hungry_Snake
         /// <summary>
         /// Виконавчий метод потоку backgroundArcage(method of class Engine)
         /// </summary>
-        static void StreamArcadeGame()
+        public static void StreamArcadeGame()
         {
             while (!GAMEOVER)
             {
@@ -749,6 +756,7 @@ namespace Hungry_Snake
                     Console.ForegroundColor = ConsoleColor.Red;
                     Console.SetCursorPosition(30, 12);
                     Console.Write("GAME PAUSED");
+                    pauseTimelapse[0] = GetTimeInSecond();
 
                     keyInfo = Console.ReadKey(true);
                     while (keyInfo.Key != ConsoleKey.P)
@@ -761,6 +769,8 @@ namespace Hungry_Snake
                     Console.ForegroundColor = ConsoleColor.White;
                     Console.SetCursorPosition(30, 12);
                     Console.Write("            ");
+                    pauseTimelapse[1] = GetTimeInSecond();
+                    pauseTimelapse[2] = pauseTimelapse[1] - pauseTimelapse[0];
                 }
 
                 for (int i = 1; i < snake.Count; i++)
@@ -845,7 +855,7 @@ namespace Hungry_Snake
         /// <summary>
         /// Виконавчий метод потоку backgroundClone(method of class Engine)
         /// </summary>
-        static void StreamChallengeGame()
+        public static void StreamChallengeGame()
         {
             while (!GAMEOVER)
             {
@@ -855,6 +865,7 @@ namespace Hungry_Snake
                     Console.ForegroundColor = ConsoleColor.Red;
                     Console.SetCursorPosition(30, 12);
                     Console.Write("[GAME PAUSED!]");
+                    pauseTimelapse[0] = GetTimeInSecond();
 
                     keyInfo = Console.ReadKey(true);
                     while (keyInfo.Key != ConsoleKey.P)
@@ -867,6 +878,8 @@ namespace Hungry_Snake
                     Console.ForegroundColor = ConsoleColor.White;
                     Console.SetCursorPosition(30, 12);
                     Console.Write("                 ");
+                    pauseTimelapse[1] = GetTimeInSecond();
+                    pauseTimelapse[2] = pauseTimelapse[1] - pauseTimelapse[0];
                 }
 
                 for (int i = 1; i < snake.Count; i++) //самосьедание
@@ -921,7 +934,7 @@ namespace Hungry_Snake
         /// <summary>
         /// Ініціалізує хід гри режиму виживання(method of class Engine)
         /// </summary>
-        static void SetSurvivalMode()
+        public static void SetSurvivalMode()
         {
             do
             {
@@ -943,20 +956,24 @@ namespace Hungry_Snake
                 else if (select == 4)
                     Drawlevel4();
 
+                CreateFood();
+
                 Console.SetCursorPosition(56, 0);
                 Console.ForegroundColor = ConsoleColor.Yellow;
                 Console.Write("SCORE: ");
                 Console.ForegroundColor = ConsoleColor.White;
                 Console.SetCursorPosition(63, 0);
                 Console.Write(score);
-                
+
+                gameTimelapse[0] = GetTimeInSecond();// стартова точка часу
                 backgrnd.Start();
                 backgrnd.IsBackground = true;
-
                 ControlSurvivalGame();
+                gameTimelapse[1] = GetTimeInSecond();// кінцева точка часу
+                gameTimelapse[2] = (gameTimelapse[1] - gameTimelapse[0]) - pauseTimelapse[2];
 
                 Console.Clear();
-                Graphics.ShowEnd(score, SnakeLength());
+                Graphics.ShowEnd(score, SnakeLength(), gameTimelapse);
 
             } while (RepeatGame(GAMEOVER, 1));
             Environment.Exit(0);
@@ -964,12 +981,13 @@ namespace Hungry_Snake
         /// <summary>
         /// Ініціалізує хід гри режиму аркади(method of class Engine)
         /// </summary>
-        static void SetArcadeMode()
+        public static void SetArcadeMode()
         {
             do
             {
                 InitiateSnake();
                 DrawField();
+                CreateFood();
 
                 Console.SetCursorPosition(3, 0);
                 Console.ForegroundColor = ConsoleColor.Yellow;
@@ -983,13 +1001,15 @@ namespace Hungry_Snake
                 Console.SetCursorPosition(63, 0);
                 Console.Write(score);
 
+                gameTimelapse[0] = GetTimeInSecond();
                 backgroundArcade.Start();
                 backgroundArcade.IsBackground = true;
-
                 ControlArcadeGame();
+                gameTimelapse[1] = GetTimeInSecond();
+                gameTimelapse[2] = (gameTimelapse[1] - gameTimelapse[0]) - pauseTimelapse[2];
 
                 Console.Clear();
-                Graphics.ShowEnd(score, SnakeLength());
+                Graphics.ShowEnd(score, SnakeLength(), gameTimelapse);
 
             } while (RepeatGame(GAMEOVER, 2));
             Environment.Exit(0);
@@ -997,7 +1017,7 @@ namespace Hungry_Snake
         /// <summary>
         /// Ініціалізує хід гри режиму протистояння(method of class Engine)
         /// </summary>
-        static void SetChallenge()
+        public static void SetChallenge()
         {
             do
             {
@@ -1017,21 +1037,23 @@ namespace Hungry_Snake
                 Console.SetCursorPosition(63, 0);
                 Console.Write(score);
 
+                gameTimelapse[0] = GetTimeInSecond();
                 backgroundClone.Start();
                 backgroundClone.IsBackground = true;
-                
                 ControlChallengeGame();
+                gameTimelapse[1] = GetTimeInSecond();
+                gameTimelapse[2] = (gameTimelapse[1] - gameTimelapse[0]) - pauseTimelapse[2];
 
                 Console.Clear();
-                Graphics.ShowEnd(score,SnakeLength());
+                Graphics.ShowEnd(score, SnakeLength(), gameTimelapse);
 
             } while (RepeatGame(GAMEOVER, 3));
-            Environment.Exit(0); 
+            Environment.Exit(0);
         }
         /// <summary>
         /// Малює ігрове поле для рівня 2(method of Walls)
         /// </summary>
-        static void DrawLevel2()
+        public static void DrawLevel2()
         {
             Console.ForegroundColor = ConsoleColor.Red;
             Console.SetCursorPosition(1, 1);
@@ -1046,14 +1068,14 @@ namespace Hungry_Snake
                 Console.Write('X');
                 gameField[23, i] = 'X';
             }
-            for (int i = 2; i < height-1; i++)
+            for (int i = 2; i < height; i++)
             {
                 Console.SetCursorPosition(1, i);
                 Console.Write('X');
                 gameField[i - 1, 0] = 'X';
-                Console.SetCursorPosition(width-1, i);
+                Console.SetCursorPosition(width - 1, i);
                 Console.Write('X');
-                gameField[i - 1, width-1] = 'X';
+                gameField[i - 1, width - 1] = 'X';
             }
 
             Console.SetCursorPosition(3, 0);
@@ -1065,17 +1087,17 @@ namespace Hungry_Snake
         /// <summary>
         /// Малює ігрове поле для рівня 3(method of Walls)
         /// </summary>
-        static void Drawlevel3()
+        public static void Drawlevel3()
         {
             Console.ForegroundColor = ConsoleColor.Red;
             Console.SetCursorPosition(1, 1);
-            for (int i = 0; i < width-1; i++)
+            for (int i = 0; i < width - 1; i++)
             {
                 Console.Write('X');
                 gameField[0, i] = 'X';
             }
             Console.SetCursorPosition(1, 23);
-            for (int i = 0; i < width-1; i++)
+            for (int i = 0; i < width - 1; i++)
             {
                 Console.Write('X');
                 gameField[22, i] = 'X';
@@ -1120,23 +1142,23 @@ namespace Hungry_Snake
         /// <summary>
         /// Малює ігрове поле для рівня 4(method of Walls)
         /// </summary>
-        static void Drawlevel4()
+        public static void Drawlevel4()
         {
             Console.ForegroundColor = ConsoleColor.Red;
             Console.SetCursorPosition(1, 1);
-            for (int i = 0; i < width-1; i++)
+            for (int i = 0; i < width - 1; i++)
             {
                 Console.Write('X');
                 gameField[0, i] = 'X';
             }
             Console.SetCursorPosition(1, 23);
-            for (int i = 0; i < width-1; i++)
+            for (int i = 0; i < width - 1; i++)
             {
                 Console.Write('X');
                 gameField[22, i] = 'X';
             }
 
-            for (int i = 2; i < height-10; i++)
+            for (int i = 2; i < height - 10; i++)
             {
                 Console.SetCursorPosition(4, i);
                 for (int j = 4; j < 9; j++)
@@ -1146,7 +1168,7 @@ namespace Hungry_Snake
                 }
             }
 
-            for (int i = 11; i < height-1; i++)
+            for (int i = 11; i < height - 1; i++)
             {
                 Console.SetCursorPosition(13, i);
                 for (int j = 13; j < 18; j++)
@@ -1198,12 +1220,21 @@ namespace Hungry_Snake
             Console.ForegroundColor = ConsoleColor.White;
         }
         /// <summary>
+        /// Обраховує інтервал часу
+        /// </summary>
+        /// <returns>час в секундах</returns>
+        public static int GetTimeInSecond()
+        {
+            DateTime time = DateTime.Now;
+            return (time.Hour * 60 + time.Minute) * 60 + time.Second;
+        }
+        /// <summary>
         /// Инициирует повторный запуск игры
         /// </summary>
         /// <param name="isGameover">статус игры</param>
         /// <param name="stream">номер потока</param>
         /// <returns></returns>
-        static bool RepeatGame(bool isGameover, int stream)
+        public static bool RepeatGame( bool isGameover, int stream )
         {
             if (isGameover)
             {
@@ -1219,7 +1250,7 @@ namespace Hungry_Snake
                             {
                                 backgrnd.Abort();
                                 Console.Clear();
-                            }     
+                            }
                             backgrnd = new Thread(StreamSurvivalGame);
                             GAMEOVER = false;
                             score = 0;
@@ -1246,7 +1277,7 @@ namespace Hungry_Snake
                             break;
                         default:
                             throw new NotImplementedException("-Wrong input parameter!");
-                      } 
+                    }
                 }
             }
             Console.Clear();

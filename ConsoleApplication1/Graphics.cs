@@ -1,17 +1,17 @@
 ﻿using System;
 using System.Threading;
 
-namespace ConsoleApplication1
+namespace SnakeSimulator
 {
-    public static class Graphics
+    static class Graphics
     {
         /// <summary>
         /// Відображує стартовий екран
         /// </summary>
         public static void ShowLogo()
         {
-            PrintString(20, 3, ConsoleColor.Green, "< H U N G R Y  ^  S N A K E");
-            PrintString(20, 5, ConsoleColor.Green, "  I N   T H E  |  C O N S O L E >");
+            PrintString(20, 3, ConsoleColor.Green, "< S N A K E  ^  W O R L D");
+            PrintString(18, 5, ConsoleColor.Green, "C O N S O L E  |  S I M U L A T O R >");
             PrintString(20, 9, ConsoleColor.White, "Choose one of the game option:\n");
             PrintString(23, 10, ConsoleColor.White, ">>Press 1 for survival mode.");
             PrintString(23, 11, ConsoleColor.White, ">>Press 2 for arcade mode.");
@@ -65,10 +65,10 @@ namespace ConsoleApplication1
         /// <summary>
         /// Відображення фінальної ігрової статистики
         /// </summary>
-        /// <param name="isgameover">статус гри</param>
+        /// <param name="time">час гри</param>
         /// <param name="score">рахунок</param>
         /// <param name="length">довжина змійки</param>
-        public static void ShowEnd(long score, int length)
+        public static void ShowEnd(long score, int length, int[] period)
         {
             PrintString(25, 7, ConsoleColor.Red, "G A M E   O V E R !!");
             Console.ForegroundColor = ConsoleColor.White;
@@ -77,7 +77,7 @@ namespace ConsoleApplication1
             Console.Write(score);
             Console.SetCursorPosition(30, 12);
             Console.Write("YOUR TIME: ");
-            //Console.Write($"{end - start} sec.");
+            Console.Write($"{period[2]} sec.");
             Console.SetCursorPosition(30, 14);
             Console.Write("SNAKE LENGTH: ");
             Console.Write(length);
